@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+    id 'eclipse'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.itsazni'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
+}
+
+dependencies {
+    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+    compileOnly("net.kyori:adventure-nbt:4.17.0")
+    
+    // Netty (provided by Velocity at runtime)
+    compileOnly("io.netty:netty-all:4.1.100.Final")
+
+    // LimboAPI from direct file release
+    compileOnly(files("libs/limboapi-1.1.27-SNAPSHOT.jar"))
+    
+    // Configurate for YAML config
+    implementation("org.spongepowered:configurate-yaml:4.1.2")
+}
+
+def targetJavaVersion = 17
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release.set(17)
+}
+
+def templateSource = file('src/main/templates')
+def templateDest = layout.buildDirectory.dir('generated/sources/templates')
+def generateTemplates = tasks.register('generateTemplates', Copy) { task ->
+    def props = ['version': project.version]
+    task.inputs.properties props
+
+    task.from templateSource
+    task.into templateDest
+    task.expand props
+}
+
+sourceSets.main.java.srcDir(generateTemplates.map { it.outputs })
+
+tasks.named('jar') {
+    archiveClassifier.set('dev')
+}
+
+tasks.named('shadowJar') {
+    archiveClassifier.set('')
+    relocate 'org.spongepowered.configurate', 'com.itsazni.simpleLimbo.libs.configurate'
+    relocate 'org.yaml.snakeyaml', 'com.itsazni.simpleLimbo.libs.snakeyaml'
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}

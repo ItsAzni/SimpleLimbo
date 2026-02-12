@@ -1,0 +1,15 @@
+{
+  "id": "simplelimbo",
+  "name": "SimpleLimbo",
+  "version": "1.0.0",
+  "main": "com.itsazni.simpleLimbo.SimpleLimbo",
+  "authors": [
+    "ItsAzni"
+  ],
+  "dependencies": [
+    {
+      "id": "limboapi",
+      "optional": false
+    }
+  ]
+}

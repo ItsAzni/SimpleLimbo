@@ -1,0 +1,275 @@
+# ============================================================
+# SimpleLimbo configuration
+# ============================================================
+# Notes:
+# - Color code uses '&' (example: '&aHello').
+# - Name under 'limbos' is limbo ID (used in command /simplelimbo send <player> <limboId>).
+# - IMPORTANT: read-timeout must be > 0 for current LimboAPI build.
+# ============================================================
+
+debug: false
+
+# ============================================================
+# VELOCITY BRIDGE (for plugins like JPremium)
+# ============================================================
+# If another plugin expects a server name that exists in Velocity [servers],
+# SimpleLimbo can register a dummy alias and intercept connection to send
+# player into a Limbo instead.
+#
+# Example:
+#   aliases:
+#     auth: "auth"
+# Then plugin can target server name "auth", and player will be moved
+# to limbo id "auth".
+#
+# NOTE: start-port uses port 1 by default because:
+# - Port 1 will get instant "connection refused" instead of TCP timeout
+# - This prevents 10+ second delays when Velocity tries to connect to the alias
+# - Port 1 is a privileged port that no service listens on
+velocity-bridge:
+  enabled: true
+  register-aliases: true
+  override-existing: true
+  host: "127.0.0.1"
+  start-port: 1
+  aliases:
+    auth: "auth"
+
+# ============================================================
+# AUTO TRIGGERS
+# ============================================================
+auto-triggers:
+  # Move player to AFK limbo if idle for too long.
+  afk:
+    enabled: false
+    limbo: "afk"
+    idle-time: 300
+    check-interval: 30
+    exempt-permission: "simplelimbo.afk.exempt"
+    message: "&7You have been moved to AFK due to inactivity."
+
+  # Move player to fallback limbo when backend kicks/disconnects.
+  fallback:
+    enabled: true
+    limbo: "fallback"
+    kick-patterns:
+      - ".*server.*closed.*"
+      - ".*server.*restarting.*"
+      - ".*timed out.*"
+      - ".*kicked.*"
+    message: "&cServer is down. You have been moved to fallback limbo."
+
+# ============================================================
+# LIMBO SERVERS
+# ============================================================
+limbos:
+  # ----------------------------------------------------------
+  # AFK limbo
+  # ----------------------------------------------------------
+  afk:
+    enabled: true
+    dimension: "THE_END"
+    gamemode: "SPECTATOR"
+    world-time: 6000
+
+    spawn:
+      x: 0.0
+      y: 100.0
+      z: 0.0
+      yaw: 0.0
+      pitch: 0.0
+
+    settings:
+      # Must be > 0 (milliseconds)
+      read-timeout: 30000
+      should-rejoin: true
+      should-respawn: false
+      reduced-debug-info: true
+      view-distance: 2
+      simulation-distance: 2
+      disable-falling: true
+      allow-movement: false
+
+    world-file:
+      enabled: false
+      type: "SCHEMATIC"
+      path: ""
+      offset:
+        x: 0
+        y: 64
+        z: 0
+      light-level: 15
+
+    # Commands below are only suggestions in chat input (when player types '/').
+    commands:
+      - "afk"
+      - "hub"
+
+    display:
+      on-join:
+        chat: "&7You are now AFK. Type &f/leave &7to return."
+        title:
+          enabled: true
+          title: "&7AFK Mode"
+          subtitle: "&8Type /leave to return"
+          fade-in: 10
+          stay: 70
+          fade-out: 20
+        actionbar:
+          enabled: false
+          message: ""
+      bossbar:
+        enabled: true
+        title: "&7AFK Mode"
+        color: "WHITE"
+        style: "SOLID"
+        progress: 1.0
+      actionbar:
+        enabled: false
+        message: ""
+        interval: 40
+
+  # ----------------------------------------------------------
+  # AUTH limbo (example for /simplelimbo send <player> auth)
+  # ----------------------------------------------------------
+  auth:
+    enabled: true
+    dimension: "OVERWORLD"
+    gamemode: "ADVENTURE"
+    world-time: 6000
+
+    # IMPORTANT: For JPremium/auth plugin compatibility.
+    # Set this to a valid server name registered in Velocity.
+    # This makes player.getCurrentServer() return a valid connection
+    # while in limbo, preventing NPE in auth plugins.
+    fake-server-name: "auth"
+
+    spawn:
+      x: 0.0
+      y: 100.0
+      z: 0.0
+      yaw: 0.0
+      pitch: 0.0
+
+    settings:
+      # Must be > 0 (milliseconds)
+      read-timeout: 30000
+      should-rejoin: true
+      should-respawn: false
+      reduced-debug-info: true
+      view-distance: 4
+      simulation-distance: 4
+      disable-falling: true
+      allow-movement: false
+
+    world-file:
+      enabled: false
+      type: "SCHEMATIC"
+      path: ""
+      offset:
+        x: 0
+        y: 64
+        z: 0
+      light-level: 15
+
+    commands:
+      - "login"
+      - "register"
+      - "premium"
+
+    display:
+      on-join:
+        chat: "&eAuthentication limbo. Type &f/login <password> &eor &f/register <password>."
+        title:
+          enabled: true
+          title: "&eAuthentication"
+          subtitle: "&7Use /login or /register"
+          fade-in: 10
+          stay: 80
+          fade-out: 20
+        actionbar:
+          enabled: false
+          message: ""
+      bossbar:
+        enabled: true
+        title: "&eAuth Limbo"
+        color: "YELLOW"
+        style: "SOLID"
+        progress: 1.0
+      actionbar:
+        enabled: false
+        message: ""
+        interval: 20
+
+  # ----------------------------------------------------------
+  # FALLBACK limbo
+  # ----------------------------------------------------------
+  fallback:
+    enabled: true
+    dimension: "THE_END"
+    gamemode: "SPECTATOR"
+    world-time: 0
+
+    spawn:
+      x: 0.0
+      y: 100.0
+      z: 0.0
+      yaw: 0.0
+      pitch: 0.0
+
+    settings:
+      # Must be > 0 (milliseconds)
+      read-timeout: 30000
+      should-rejoin: true
+      should-respawn: false
+      reduced-debug-info: true
+      view-distance: 2
+      simulation-distance: 2
+      disable-falling: true
+      allow-movement: false
+
+    world-file:
+      enabled: false
+      type: "SCHEMATIC"
+      path: ""
+      offset:
+        x: 0
+        y: 64
+        z: 0
+      light-level: 15
+
+    commands:
+      - "hub"
+      - "lobby"
+      - "queue"
+
+    display:
+      on-join:
+        chat: "&cAll servers are offline."
+        title:
+          enabled: true
+          title: "&cServer Offline"
+          subtitle: "&7Attempting reconnect..."
+          fade-in: 10
+          stay: 80
+          fade-out: 20
+        actionbar:
+          enabled: false
+          message: ""
+      bossbar:
+        enabled: true
+        title: "&cFallback Limbo"
+        color: "RED"
+        style: "SOLID"
+        progress: 1.0
+      actionbar:
+        enabled: true
+        message: "&7Reconnecting in {countdown}s..."
+        interval: 20
+
+    auto-reconnect:
+      enabled: true
+      interval: 30
+      server: "lobby"
+      message: "&7Attempting reconnect..."
+      success-message: "&aReconnected successfully!"
