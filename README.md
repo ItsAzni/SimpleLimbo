@@ -183,7 +183,7 @@ mainServerNames: [lobby]
 ## Building from Source
 
 ```bash
-git clone https://github.com/yourusername/SimpleLimbo.git
+git clone https://github.com/ItsAzni/SimpleLimbo.git
 cd SimpleLimbo
 ./gradlew shadowJar
 ```
