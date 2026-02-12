@@ -87,8 +87,13 @@ limbos:
       reduced-debug-info: true
       view-distance: 2
       simulation-distance: 2
+      # Keep player from falling by locking Y after join is stable.
       disable-falling: true
-      allow-movement: false
+      # Delay before anti-fall activates (milliseconds).
+      # IMPORTANT: If entering limbo feels slow / stuck at "Loading Terrain",
+      # increase this value (example: 1200, 1500, 2000).
+      # Lower value = anti-fall activates sooner, but higher risk of join delay.
+      disable-falling-delay-ms: 5000
 
     world-file:
       enabled: false
@@ -159,8 +164,13 @@ limbos:
       reduced-debug-info: true
       view-distance: 4
       simulation-distance: 4
+      # Keep player from falling by locking Y after join is stable.
       disable-falling: true
-      allow-movement: false
+      # Delay before anti-fall activates (milliseconds).
+      # IMPORTANT: If entering limbo feels slow / stuck at "Loading Terrain",
+      # increase this value (example: 1200, 1500, 2000).
+      # Lower value = anti-fall activates sooner, but higher risk of join delay.
+      disable-falling-delay-ms: 5000
 
     world-file:
       enabled: false
@@ -225,8 +235,13 @@ limbos:
       reduced-debug-info: true
       view-distance: 2
       simulation-distance: 2
+      # Keep player from falling by locking Y after join is stable.
       disable-falling: true
-      allow-movement: false
+      # Delay before anti-fall activates (milliseconds).
+      # IMPORTANT: If entering limbo feels slow / stuck at "Loading Terrain",
+      # increase this value (example: 1200, 1500, 2000).
+      # Lower value = anti-fall activates sooner, but higher risk of join delay.
+      disable-falling-delay-ms: 5000
 
     world-file:
       enabled: false

@@ -37,23 +37,25 @@ limbos:
     dimension: "OVERWORLD"
     gamemode: "ADVENTURE"
     world-time: 6000
-    
+
     spawn:
       x: 0.0
       y: 100.0
       z: 0.0
       yaw: 0.0
       pitch: 0.0
-    
+
     settings:
       read-timeout: 30000
+      should-rejoin: true
+      should-respawn: false
       disable-falling: true
-      allow-movement: false
-    
+      disable-falling-delay-ms: 5000
+
     commands:
       - "login"
       - "register"
-    
+
     display:
       on-join:
         chat: "&eUse /login or /register"
@@ -72,10 +74,21 @@ velocity-bridge:
   enabled: true
   register-aliases: true
   aliases:
-    auth: "auth"  # Maps server name "auth" to limbo "auth"
+    auth: "auth" # Maps server name "auth" to limbo "auth"
 ```
 
 Then in your auth plugin config, set the limbo server to `auth`.
+
+### Anti-Fall Tuning
+
+- `disable-falling` keeps players from dropping after join (Y lock mode).
+- `disable-falling-delay-ms` controls when anti-fall starts.
+- If players get slow join or "Loading Terrain" delay, increase `disable-falling-delay-ms` (for example: `1200`, `1500`, `2000`).
+
+### Settings Notes
+
+- `should-rejoin: true` keeps LimboAPI rejoin flow enabled (recommended for stability).
+- `should-respawn: false` avoids extra respawn packet during join.
 
 ### Fallback System
 
@@ -126,18 +139,18 @@ limbos:
 
 ## Commands
 
-| Command | Permission | Description |
-|---------|------------|-------------|
+| Command                              | Permission          | Description              |
+| ------------------------------------ | ------------------- | ------------------------ |
 | `/simplelimbo send <player> <limbo>` | `simplelimbo.admin` | Send a player to a limbo |
-| `/simplelimbo list` | `simplelimbo.admin` | List all limbo servers |
-| `/simplelimbo reload` | `simplelimbo.admin` | Reload configuration |
+| `/simplelimbo list`                  | `simplelimbo.admin` | List all limbo servers   |
+| `/simplelimbo reload`                | `simplelimbo.admin` | Reload configuration     |
 
 ## Permissions
 
-| Permission | Description |
-|------------|-------------|
-| `simplelimbo.admin` | Access to admin commands |
-| `simplelimbo.afk.exempt` | Exempt from AFK trigger |
+| Permission               | Description              |
+| ------------------------ | ------------------------ |
+| `simplelimbo.admin`      | Access to admin commands |
+| `simplelimbo.afk.exempt` | Exempt from AFK trigger  |
 
 ## Auth Plugin Compatibility
 
@@ -148,6 +161,7 @@ SimpleLimbo includes compatibility features for authentication plugins that call
 3. Configure your auth plugin to use this server name as the limbo server
 
 Example for JPremium:
+
 ```yaml
 # SimpleLimbo config.yml
 velocity-bridge:

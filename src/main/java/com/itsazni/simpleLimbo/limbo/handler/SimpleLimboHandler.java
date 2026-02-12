@@ -2,7 +2,6 @@ package com.itsazni.simpleLimbo.limbo.handler;
 
 import com.itsazni.simpleLimbo.SimpleLimbo;
 import com.itsazni.simpleLimbo.config.LimboServerConfig;
-import com.itsazni.simpleLimbo.config.SpawnConfig;
 import com.itsazni.simpleLimbo.compat.ServerConnectionInjector;
 import com.itsazni.simpleLimbo.limbo.LimboInstance;
 import com.itsazni.simpleLimbo.util.MessageUtil;
@@ -26,8 +25,15 @@ public class SimpleLimboHandler implements LimboSessionHandler {
 
     private LimboPlayer limboPlayer;
     private ScheduledFuture<?> autoReconnectTask;
+    private ScheduledFuture<?> disableFallingFallbackTask;
     private int countdownSeconds;
-    private boolean movementLocked;
+    private boolean disableFallingRequested;
+    private boolean disableFallingApplied;
+    private long disableFallingDelayMs;
+    private long spawnMillis;
+    private Double holdY;
+    private float lastYaw;
+    private float lastPitch;
 
     public SimpleLimboHandler(SimpleLimbo plugin, LimboInstance instance, Player proxyPlayer) {
         this.plugin = plugin;
@@ -40,22 +46,27 @@ public class SimpleLimboHandler implements LimboSessionHandler {
         this.limboPlayer = player;
 
         LimboServerConfig config = instance.getConfig();
+        this.spawnMillis = System.currentTimeMillis();
+        this.lastYaw = config.getSpawn().getYaw();
+        this.lastPitch = config.getSpawn().getPitch();
+
         if (config.getSettings().isDisableFalling()) {
-            player.disableFalling();
+            this.disableFallingRequested = true;
+            this.disableFallingApplied = false;
+            this.disableFallingDelayMs = Math.max(0, config.getSettings().getDisableFallingDelayMs());
+            this.holdY = null;
+            this.disableFallingFallbackTask = player.getScheduledExecutor().schedule(
+                    this::applyDisableFalling,
+                    this.disableFallingDelayMs + 8000,
+                    TimeUnit.MILLISECONDS
+            );
         } else {
+            this.disableFallingRequested = false;
+            this.disableFallingApplied = false;
+            this.disableFallingDelayMs = 0;
+            this.holdY = null;
             player.enableFalling();
         }
-
-        this.movementLocked = !config.getSettings().isAllowMovement();
-
-        player.teleport(
-                config.getSpawn().getX(),
-                config.getSpawn().getY(),
-                config.getSpawn().getZ(),
-                config.getSpawn().getYaw(),
-                config.getSpawn().getPitch()
-        );
-        player.sendAbilities();
 
         if (!config.getCommands().isEmpty()) {
             proxyPlayer.addCustomChatCompletions(config.getCommands());
@@ -76,6 +87,23 @@ public class SimpleLimboHandler implements LimboSessionHandler {
     @Override
     public void onConfig(Limbo server, LimboPlayer player) {
         this.limboPlayer = player;
+    }
+
+    @Override
+    public void onGeneric(Object packet) {
+        applyDisableFalling();
+    }
+
+    @Override
+    public void onMove(double posX, double posY, double posZ) {
+        enforceAntiFall(posX, posY, posZ, lastYaw, lastPitch);
+    }
+
+    @Override
+    public void onMove(double posX, double posY, double posZ, float yaw, float pitch) {
+        this.lastYaw = yaw;
+        this.lastPitch = pitch;
+        enforceAntiFall(posX, posY, posZ, yaw, pitch);
     }
 
     @Override
@@ -136,47 +164,12 @@ public class SimpleLimboHandler implements LimboSessionHandler {
     }
 
     @Override
-    public void onMove(double posX, double posY, double posZ) {
-        if (!movementLocked || limboPlayer == null) {
-            return;
-        }
-
-        // Only teleport if player actually moved away from spawn
-        SpawnConfig spawn = instance.getConfig().getSpawn();
-        if (isAtSpawn(posX, posY, posZ, spawn)) {
-            return;
-        }
-
-        teleportToSpawn();
-    }
-
-    @Override
-    public void onMove(double posX, double posY, double posZ, float yaw, float pitch) {
-        if (!movementLocked || limboPlayer == null) {
-            return;
-        }
-
-        // Only teleport if player actually moved away from spawn
-        SpawnConfig spawn = instance.getConfig().getSpawn();
-        if (isAtSpawn(posX, posY, posZ, spawn)) {
-            return;
-        }
-
-        teleportToSpawn();
-    }
-
-    private boolean isAtSpawn(double posX, double posY, double posZ, SpawnConfig spawn) {
-        // Use small epsilon for float comparison
-        double epsilon = 0.1;
-        return Math.abs(posX - spawn.getX()) < epsilon &&
-               Math.abs(posY - spawn.getY()) < epsilon &&
-               Math.abs(posZ - spawn.getZ()) < epsilon;
-    }
-
-    @Override
     public void onDisconnect() {
         if (autoReconnectTask != null) {
             autoReconnectTask.cancel(true);
+        }
+        if (disableFallingFallbackTask != null) {
+            disableFallingFallbackTask.cancel(true);
         }
         if (!instance.getConfig().getCommands().isEmpty()) {
             proxyPlayer.removeCustomChatCompletions(instance.getConfig().getCommands());
@@ -223,15 +216,53 @@ public class SimpleLimboHandler implements LimboSessionHandler {
         }, 1, 1, TimeUnit.SECONDS);
     }
 
-    private void teleportToSpawn() {
-        LimboServerConfig config = instance.getConfig();
+    private void applyDisableFalling() {
+        if (!disableFallingRequested || disableFallingApplied || limboPlayer == null) {
+            return;
+        }
+
+        long sinceSpawn = System.currentTimeMillis() - spawnMillis;
+        if (sinceSpawn < disableFallingDelayMs) {
+            return;
+        }
+
+        disableFallingApplied = true;
+        LimboServerConfig limboConfig = instance.getConfig();
+        holdY = limboConfig.getSpawn().getY();
         limboPlayer.teleport(
-                config.getSpawn().getX(),
-                config.getSpawn().getY(),
-                config.getSpawn().getZ(),
-                config.getSpawn().getYaw(),
-                config.getSpawn().getPitch()
+                limboConfig.getSpawn().getX(),
+                limboConfig.getSpawn().getY(),
+                limboConfig.getSpawn().getZ(),
+                limboConfig.getSpawn().getYaw(),
+                limboConfig.getSpawn().getPitch()
         );
+        lastYaw = limboConfig.getSpawn().getYaw();
+        lastPitch = limboConfig.getSpawn().getPitch();
+
+        if (plugin.getSettings().isDebug()) {
+            plugin.getLogger().info("Activated anti-fall for {} in '{}' after {}ms", proxyPlayer.getUsername(), instance.getName(), sinceSpawn);
+        }
+
+        if (disableFallingFallbackTask != null) {
+            disableFallingFallbackTask.cancel(false);
+            disableFallingFallbackTask = null;
+        }
+    }
+
+    private void enforceAntiFall(double posX, double posY, double posZ, float yaw, float pitch) {
+        applyDisableFalling();
+        if (!disableFallingApplied || limboPlayer == null) {
+            return;
+        }
+
+        if (holdY == null) {
+            holdY = posY;
+            return;
+        }
+
+        if (posY < holdY - 0.02) {
+            limboPlayer.teleport(posX, holdY, posZ, yaw, pitch);
+        }
     }
 
     /**

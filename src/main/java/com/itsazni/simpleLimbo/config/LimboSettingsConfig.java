@@ -27,8 +27,8 @@ public class LimboSettingsConfig {
     @Comment("Disable player falling (keep floating)")
     private boolean disableFalling = true;
 
-    @Comment("Allow player movement in limbo")
-    private boolean allowMovement = false;
+    @Comment("Delay before anti-fall activates (milliseconds)")
+    private long disableFallingDelayMs = 5000;
 
     public LimboSettingsConfig() {}
 
@@ -60,7 +60,7 @@ public class LimboSettingsConfig {
         return disableFalling;
     }
 
-    public boolean isAllowMovement() {
-        return allowMovement;
+    public long getDisableFallingDelayMs() {
+        return disableFallingDelayMs;
     }
 }

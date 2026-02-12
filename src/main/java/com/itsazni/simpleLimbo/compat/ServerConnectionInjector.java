@@ -99,7 +99,7 @@ public class ServerConnectionInjector {
             connectionField.setAccessible(true);
 
             available = true;
-            logger.info("ServerConnectionInjector initialized successfully - using real VelocityServerConnection with fake MinecraftConnection");
+            logger.debug("ServerConnectionInjector initialized successfully - using real VelocityServerConnection with fake MinecraftConnection");
         } catch (ClassNotFoundException e) {
             logger.warn("Could not find Velocity internal class: {} - fake server injection not available", e.getMessage());
         } catch (NoSuchMethodException e) {
@@ -184,7 +184,7 @@ public class ServerConnectionInjector {
             // Use public setConnectedServer method
             setConnectedServerMethod.invoke(player, serverConnection);
 
-            logger.info("Injected VelocityServerConnection '{}' for player {} in limbo (with fake MinecraftConnection)", 
+            logger.debug("Injected VelocityServerConnection '{}' for player {} in limbo (with fake MinecraftConnection)", 
                     fakeServer.getServerInfo().getName(), player.getUsername());
             return true;
             
